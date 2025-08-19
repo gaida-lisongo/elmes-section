@@ -20,7 +20,7 @@ class Agent extends Model {
   async findByAuth({ secure, matricule }) {
     const sql = `SELECT * FROM agent WHERE secure = ? AND matricule = ?`;
     const results = await this.request(sql, [secure, matricule]);
-    return results[0];
+    return results;
   }
 
   async searchByName(name) {
@@ -38,8 +38,9 @@ class Agent extends Model {
     secure,
     matricule,
     photo,
+    telephone,
   }) {
-    const sql = `INSERT INTO agent (nom, post_nom, prenom, sexe, date_naissance, nationalite, e_mail, secure, matricule, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const sql = `INSERT INTO agent (nom, post_nom, prenom, sexe, date_naissance, nationalite, e_mail, secure, matricule, photo, telephone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     const params = [
       nom,
       post_nom,
@@ -51,7 +52,10 @@ class Agent extends Model {
       secure,
       matricule,
       photo,
+      telephone,
     ];
+
+    console.log("Creating agent with SQL:", sql, " and params:", params);
     await this.request(sql, params);
     return this.lastInsertId();
   }
