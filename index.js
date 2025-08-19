@@ -4,6 +4,9 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const routes = require("./router");
 const db = require("./service/Database");
+const { exec } = require("child_process");
+const crypto = require("crypto");
+
 require("dotenv").config();
 
 const app = express();
@@ -17,8 +20,13 @@ app.use(
   })
 );
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString();
+    },
+  })
+);
 
 // Ton secret défini dans GitHub webhook
 const SECRET = "inbtp-vps-2025";
@@ -27,6 +35,7 @@ const SECRET = "inbtp-vps-2025";
 function verifySignature(req) {
   const signature = req.headers["x-hub-signature-256"];
   const hmac = crypto.createHmac("sha256", SECRET);
+  console.log("HMAC : ", signature, " - ", hmac);
   const digest = "sha256=" + hmac.update(JSON.stringify(req.body)).digest("hex");
   return signature === digest;
 }
@@ -53,7 +62,8 @@ app.post("/webhook", (req, res) => {
 
   res.status(200).send("Webhook reçu");
 });
-
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 // Routes
 app.use("/api", routes);
 
