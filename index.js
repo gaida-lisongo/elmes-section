@@ -21,7 +21,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Ton secret défini dans GitHub webhook
-const SECRET = "ton_secret";
+const SECRET = "inbtp-vps-2025";
 
 // Vérification de la signature envoyée par GitHub
 function verifySignature(req) {
