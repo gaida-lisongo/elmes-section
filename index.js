@@ -63,6 +63,7 @@ app.post("/webhook", (req, res) => {
 
   res.status(200).send("Webhook reçu");
 });
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 // Routes
