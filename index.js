@@ -48,7 +48,7 @@ app.post("/webhook", (req, res) => {
 
   const event = req.headers["x-github-event"];
   if (event === "push") {
-    console.log("✅ Nouveau push détecté");
+    console.log("✅ Nouveau push détecté avec succès");
 
     // Lancer le script de déploiement
     exec("sh deploy.sh", (error, stdout, stderr) => {
