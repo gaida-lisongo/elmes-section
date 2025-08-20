@@ -304,4 +304,25 @@ router.get('/note', Secure.verifyToken, async (req, res) => {
   }
 });
 
+router.get("/check-jury/:id/:code", Secure.verifyToken, async (req, res) => {
+  try {
+    const juryExists = await titulaireController.checkJuryExists(
+      req.params.id,
+      req.params.code
+    );
+    res.status(200).json({
+      success: true,
+      message: "Vérification du jury réussie",
+      data: juryExists,
+    });
+  } catch (error) {
+    console.error("Error checking jury:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error checking jury",
+      error: "Internal Server Error",
+    });
+  }
+});
+
 module.exports = router;
