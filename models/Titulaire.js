@@ -451,6 +451,7 @@ class Titulaire extends Agent {
   }
 
   async checkJuryAutorization({ id, code }) {
+    console.log("Checking jury authorization for ID:", id, "and code:", code);
     const sql = `SELECT 
                 *
             FROM jury
