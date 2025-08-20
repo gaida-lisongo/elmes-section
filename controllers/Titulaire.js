@@ -449,7 +449,7 @@ class TitulaireController extends AgentController {
         id,
         code,
       });
-      return !!jury;
+      return jury;
     } catch (error) {
       console.error("Error checking jury existence:", error);
       throw new Error("Failed to check jury existence");
