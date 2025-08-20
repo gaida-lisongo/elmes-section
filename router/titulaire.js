@@ -311,7 +311,7 @@ router.get("/check-jury/:id/:code", Secure.verifyToken, async (req, res) => {
       req.params.code
     );
 
-    console.log("Jury exists:", juryExists);
+    console.log("Jury exists response:", juryExists);
     res.status(200).json({
       success: true,
       message: "Vérification du jury réussie",
