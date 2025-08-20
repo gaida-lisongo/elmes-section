@@ -306,6 +306,12 @@ router.get('/note', Secure.verifyToken, async (req, res) => {
 
 router.get("/check-jury/:id/:code", Secure.verifyToken, async (req, res) => {
   try {
+    console.log(
+      "Checking jury for ID:",
+      req.params.id,
+      "and code:",
+      req.params.code
+    );
     const juryExists = await titulaireController.checkJuryExists(
       req.params.id,
       req.params.code
