@@ -51,7 +51,7 @@ app.post("/webhook", (req, res) => {
     console.log("✅ Nouveau push détecté");
 
     // Lancer le script de déploiement
-    exec("sh /var/www/deploy.sh", (error, stdout, stderr) => {
+    exec("sh deploy.sh", (error, stdout, stderr) => {
       if (error) {
         console.error(`❌ Erreur: ${error.message}`);
         return;
