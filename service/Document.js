@@ -18,7 +18,17 @@ class Document {
       title = "GRILLE DES NOTES - SESSION PRINCIPALE",
       institution = "UNIVERSITÉ",
       anneeAcademique = "2024-2025",
+      sortByName = true
     } = options;
+
+    // Trier les étudiants par nom si demandé
+    if (sortByName && this.data.students) {
+      this.data.students.sort((a, b) => {
+        const nameA = `${a.nom || ""} ${a.post_nom || ""} ${a.prenom || ""}`.trim().toLowerCase();
+        const nameB = `${b.nom || ""} ${b.post_nom || ""} ${b.prenom || ""}`.trim().toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+    }
 
     // Créer la feuille de calcul
     this.worksheet = this.workbook.addWorksheet(sheetName);
@@ -84,7 +94,7 @@ class Document {
   }
 
   /**
-   * Ajoute le tableau principal des notes
+   * Ajoute le tableau principal des notes - VERSION CORRIGÉE
    */
   _addGradeTable(startRow) {
     const ws = this.worksheet;
@@ -105,9 +115,10 @@ class Document {
       const elementsCount = unite.elements.length;
       const uniteStartCol = currentCol;
       
-      // En-tête de l'unité (niveau 1) - fusionner sur éléments + moyenne + décision
+      // CORRECTION: En-tête de l'unité fusionné sur éléments + moyenne + décision
       const uniteEndCol = currentCol + elementsCount + 1; // +2 pour moyenne et décision
 
+      // Fusionner l'en-tête de l'unité
       if (uniteEndCol > uniteStartCol) {
         ws.mergeCells(headerRow1, uniteStartCol, headerRow1, uniteEndCol);
         const uniteCell = ws.getCell(headerRow1, uniteStartCol);
@@ -138,8 +149,6 @@ class Document {
           fgColor: { argb: "FFE2EFDA" },
         };
         this._setBorder(elemCell, "thin");
-
-        // Définir la largeur de colonne
         ws.getColumn(currentCol).width = 12;
         currentCol++;
       });
@@ -234,8 +243,8 @@ class Document {
     const summaryColumns = [
       { header: "TOTAL", width: 8 },
       { header: "%", width: 8 },
-      { header: "MENTION", width: 8 },
-      { header: "DÉCISION", width: 10 },
+      { header: "MENTION", width: 10 },
+      { header: "DÉCISION", width: 12 },
     ];
 
     summaryColumns.forEach((col, index) => {
@@ -256,7 +265,7 @@ class Document {
   }
 
   /**
-   * Ajoute une ligne d'étudiant - VERSION CORRIGÉE SANS DOUBLONS
+   * Ajoute une ligne d'étudiant - VERSION SYNCHRONISÉE AVEC LES EN-TÊTES
    */
   _addStudentRow(row, student, numero) {
     if (!student) return;
@@ -265,19 +274,24 @@ class Document {
 
     // Informations fixes (SANS MATRICULE)
     ws.getCell(row, 1).value = numero;
-    ws.getCell(row, 2).value = `${student.nom || ""} ${student.post_nom || ""} ${student.prenom || ""}`.trim();
+    ws.getCell(row, 2).value = `${student.nom || ""} ${
+      student.post_nom || ""
+    } ${student.prenom || ""}`.trim();
 
     let currentCol = 3; // Commence à la colonne 3 (après N° et Nom)
     let dataIndex = 0;
 
-    // Parcourir les unités dans l'ordre
+    // CORRECTION: Parcourir EXACTEMENT comme dans l'en-tête
     if (this.data.unites) {
       this.data.unites.forEach((unite) => {
         if (!unite || !unite.elements) return;
 
         // Notes des éléments de cette unité
         unite.elements.forEach((element) => {
-          const note = student.data && student.data[dataIndex] !== undefined ? student.data[dataIndex] : "X";
+          const note =
+            student.data && student.data[dataIndex] !== undefined
+              ? student.data[dataIndex]
+              : "X";
 
           const cell = ws.getCell(row, currentCol);
           cell.value = note;
@@ -286,13 +300,29 @@ class Document {
           // Formatage conditionnel
           if (typeof note === "number") {
             if (note >= 16) {
-              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF92D050" } };
+              cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FF92D050" },
+              };
             } else if (note >= 12) {
-              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFF00" } };
+              cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FFFFFF00" },
+              };
             } else if (note >= 10) {
-              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFC000" } };
+              cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FFFFC000" },
+              };
             } else {
-              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFF6B6B" } };
+              cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FFFF6B6B" },
+              };
               cell.font = { color: { argb: "FFFFFFFF" } };
             }
           }
@@ -303,17 +333,31 @@ class Document {
         });
 
         // Moyenne de l'unité
-        const moyenneUE = student.data && student.data[dataIndex] !== undefined ? student.data[dataIndex] : 0;
+        const moyenneUE =
+          student.data && student.data[dataIndex] !== undefined
+            ? student.data[dataIndex]
+            : 0;
         const moyCell = ws.getCell(row, currentCol);
-        moyCell.value = typeof moyenneUE === "number" ? Math.round(moyenneUE * 100) / 100 : moyenneUE;
+        moyCell.value =
+          typeof moyenneUE === "number"
+            ? Math.round(moyenneUE * 100) / 100
+            : moyenneUE;
         moyCell.font = { bold: true };
         moyCell.alignment = { horizontal: "center", vertical: "middle" };
 
         if (typeof moyenneUE === "number") {
           if (moyenneUE >= 10) {
-            moyCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF92D050" } };
+            moyCell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FF92D050" },
+            };
           } else {
-            moyCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFF6B6B" } };
+            moyCell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFFF6B6B" },
+            };
             moyCell.font.color = { argb: "FFFFFFFF" };
           }
         }
@@ -323,16 +367,27 @@ class Document {
         dataIndex++;
 
         // Décision de l'unité (V/NV)
-        const decisionUE = student.data && student.data[dataIndex] !== undefined ? student.data[dataIndex] : "NV";
+        const decisionUE =
+          student.data && student.data[dataIndex] !== undefined
+            ? student.data[dataIndex]
+            : "NV";
         const decisionCell = ws.getCell(row, currentCol);
         decisionCell.value = decisionUE === "V" ? "✓" : "✗";
         decisionCell.font = { bold: true };
         decisionCell.alignment = { horizontal: "center", vertical: "middle" };
 
         if (decisionUE === "V") {
-          decisionCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF92D050" } };
+          decisionCell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FF92D050" },
+          };
         } else {
-          decisionCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFF6B6B" } };
+          decisionCell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFF6B6B" },
+          };
           decisionCell.font.color = { argb: "FFFFFFFF" };
         }
 
@@ -342,14 +397,14 @@ class Document {
       });
     }
 
-    // Données de synthèse finale (simplifiée)
+    // Données de synthèse finale (EXACTEMENT 4 colonnes comme l'en-tête)
     if (student.data && student.data.length >= 4) {
       const dataLength = student.data.length;
       const synthese = [
         student.data[dataLength - 6] || 0, // total
         student.data[dataLength - 5] || 0, // pourcentage
         student.data[dataLength - 4] || "", // mention
-        student.data[dataLength - 1] || "" // décision finale
+        student.data[dataLength - 1] || "", // décision finale
       ];
 
       synthese.forEach((value, index) => {
@@ -358,13 +413,24 @@ class Document {
         cell.font = { bold: true };
         cell.alignment = { horizontal: "center", vertical: "middle" };
 
-        if (index === 1) { // pourcentage
-          cell.value = typeof value === "number" ? `${value.toFixed(1)}%` : value;
-        } else if (index === 3) { // décision finale
-          if (value === "Passe" || value === "ADMIS") {
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF92D050" } };
+        if (index === 1) {
+          // pourcentage
+          cell.value =
+            typeof value === "number" ? `${value.toFixed(1)}%` : value;
+        } else if (index === 3) {
+          // décision finale
+          if (value === "Passe" || value === "ADMIS" || value === "PASS") {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FF92D050" },
+            };
           } else {
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFF6B6B" } };
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "FFFF6B6B" },
+            };
             cell.font.color = { argb: "FFFFFFFF" };
           }
         }
@@ -432,12 +498,19 @@ class Document {
   }
 
   /**
-   * Génère les données en tant qu'array d'objets (simplifié)
+   * Génère les données en tant qu'array d'objets (simplifié et trié)
    */
   genArray() {
     const { unites, students } = this.data;
 
-    return students.map((student) => {
+    // Trier les étudiants par nom
+    const sortedStudents = [...students].sort((a, b) => {
+      const nameA = `${a.nom || ""} ${a.post_nom || ""} ${a.prenom || ""}`.trim().toLowerCase();
+      const nameB = `${b.nom || ""} ${b.post_nom || ""} ${b.prenom || ""}`.trim().toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+
+    return sortedStudents.map((student) => {
       const row = {
         nom: `${student.nom} ${student.post_nom} ${student.prenom}`.trim(),
         email: student.e_mail,
