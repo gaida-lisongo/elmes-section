@@ -508,6 +508,7 @@ class TitulaireController extends AgentController {
           let data = [];
 
           unites.forEach((unite) => {
+            if (unite.semestre != semestre) return;
             const { elements } = unite;
 
             let moyUnite = 0;
