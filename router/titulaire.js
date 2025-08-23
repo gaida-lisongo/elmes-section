@@ -333,4 +333,26 @@ router.get("/check-jury/:id/:code", Secure.verifyToken, async (req, res) => {
   }
 });
 
+router.get("/grille/:id/:type/:semestre", async (req, res) => {
+  try {
+    const grille = await titulaireController.fetchGrille({
+      id: req.params.id,
+      type: req.params.type,
+      semestre: req.params.semestre,
+    });
+    res.status(200).json({
+      success: true,
+      message: "Grille récupérée avec succès",
+      data: grille,
+    });
+  } catch (error) {
+    console.error("Error fetching grille:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching grille",
+      error: "Internal Server Error",
+    });
+  }
+});
+
 module.exports = router;

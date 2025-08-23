@@ -1,3 +1,4 @@
+const e = require("express");
 const Titulaire = require("../models/Titulaire");
 const AgentController = require("./Agent");
 
@@ -453,6 +454,163 @@ class TitulaireController extends AgentController {
     } catch (error) {
       console.error("Error checking jury existence:", error);
       throw new Error("Failed to check jury existence");
+    }
+  }
+
+  async fetchGrille({ id, semestre, type }) {
+    try {
+      const jury = await this.titulaireModel.getByJuryId(id);
+
+      if (!jury || jury.length === 0) {
+        throw new Error("Jury not found");
+      }
+
+      let totalSemestre = 0;
+      let creditsSemestre = 0;
+
+      // Get all units with their elements
+      const unites = await Promise.all(
+        jury.map(async (unite) => {
+          if (unite.semestre == type) return null;
+          const elements = await this.titulaireModel.getElementsByUe(unite.id);
+          creditsSemestre += elements.reduce(
+            (sum, element) => sum + element.credit,
+            0
+          );
+          return {
+            ...unite,
+            elements,
+            total: elements.length,
+            credits: elements.reduce((sum, element) => sum + element.credit, 0),
+            moy: 0,
+            validate: false,
+          };
+        })
+      );
+
+      totalSemestre += 20 * creditsSemestre;
+
+      // Get all student with their notes
+      const students = await this.titulaireModel.getStudentsByJuryId({
+        semestre,
+        id_jury: id,
+      });
+
+      // Map students to their notes
+      const studentNotes = await Promise.all(
+        students.map(async (student) => {
+          let totalObtenu = 0;
+          let ncv = 0.0;
+          let ncnv = 0.0;
+          let pourcentage = 0;
+          let appreciation = null;
+
+          let data = [];
+
+          unites.forEach((unite) => {
+            const { elements } = unite;
+
+            let moyUnite = 0;
+            let decisionUnite = null;
+
+            elements.forEach(async (element) => {
+              const note = await this.titulaireModel.getNoteOfStudent({
+                id_etudiant: student.id,
+                id_element: element.id,
+                id_annee: unite.id_annee,
+              });
+              if (!note.length) {
+                data.push("X");
+                return;
+              }
+              const totalAnnuel = note
+                ? parseFloat(note.cmi) + parseFloat(note.examen)
+                : 0;
+              const totalAnnuelP = totalAnnuel * element.credit;
+              const totalRattrapage = note ? parseFloat(note.rattrapage) : 0;
+              const totalRattrapageP = totalRattrapage * element.credit;
+
+              // Calcul de la moyenne de l'unité d'enseignement
+              switch (type) {
+                case "Principal":
+                  moyUnite += unite.credits ? totalAnnuelP / unite.credits : 0;
+                  data.push(totalAnnuel);
+                  break;
+                case "Rattrapage":
+                  moyUnite += unite.credits
+                    ? totalRattrapageP / unite.credits
+                    : 0;
+                  data.push(totalRattrapage);
+                  break;
+
+                default:
+                  const totalP =
+                    totalAnnuelP > totalRattrapageP
+                      ? totalAnnuelP
+                      : totalRattrapageP;
+                  moyUnite += unite.credits ? totalP / unite.credits : 0;
+                  const totalG =
+                    totalAnnuel > totalRattrapage
+                      ? totalAnnuel
+                      : totalRattrapage;
+                  data.push(totalG);
+                  break;
+              }
+            });
+
+            decisionUnite = moyUnite >= 10 ? "V" : "NV";
+            totalObtenu += moyUnite;
+
+            if (decisionUnite === "V") {
+              ncv += unite.credits;
+            } else {
+              ncnv += unite.credits;
+            }
+
+            data.push(moyUnite);
+            data.push(decisionUnite);
+          });
+
+          pourcentage = totalSemestre
+            ? (totalObtenu / totalSemestre) * 100
+            : 0.0;
+
+          if (pourcentage >= 90) {
+            appreciation = "A";
+          } else if (pourcentage >= 80) {
+            appreciation = "B";
+          } else if (pourcentage >= 70) {
+            appreciation = "C";
+          } else if (pourcentage >= 60) {
+            appreciation = "D";
+          } else if (pourcentage >= 50) {
+            appreciation = "E";
+          } else {
+            appreciation = "F";
+          }
+
+          data.push(totalObtenu);
+          data.push(pourcentage.toFixed(2));
+          data.push(appreciation);
+          data.push(ncv);
+          data.push(ncnv);
+          const decisionJury = ncv >= 22.5 ? "Passe" : "Double";
+          data.push(decisionJury);
+
+          return {
+            ...student,
+            data,
+          };
+        })
+      );
+
+      return {
+        unites,
+        students: studentNotes,
+      };
+    } catch (error) {
+      console.error("Error fetching grille:", error);
+      throw new Error("Failed to fetch grille");
     }
   }
 }
