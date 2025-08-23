@@ -441,9 +441,10 @@ class Titulaire extends Agent {
                 s.designation AS 'semestre',
                 jp.id_annee
             FROM jury_promotion jp
+            INNER JOIN jury j ON j.id = jp.id_jury
             INNER JOIN unite u ON u.id_semestre = jp.id_semestre
             INNER JOIN semestre s ON s.id = jp.id_semestre
-            WHERE jp.id_jury = ?
+            WHERE jp.id_jury = ? AND j.id_section = u.id_section
         `;
 
     const rows = await this.request(sql, [id]);
