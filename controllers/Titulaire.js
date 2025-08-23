@@ -491,7 +491,7 @@ class TitulaireController extends AgentController {
       totalSemestre += 20 * creditsSemestre;
 
       // Get all student with their notes
-      const students = await this.titulaireModel.getStudentsByJuryId({
+      const students = await this.titulaireModel.getStudentByJury({
         semestre,
         id_jury: id,
       });
