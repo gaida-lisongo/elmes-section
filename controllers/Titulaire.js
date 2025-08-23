@@ -471,7 +471,7 @@ class TitulaireController extends AgentController {
       // Get all units with their elements
       const unites = await Promise.all(
         jury.map(async (unite) => {
-          if (unite.semestre == type) return null;
+          if (unite.semestre == semestre) return null;
           const elements = await this.titulaireModel.getElementsByUe(unite.id);
           creditsSemestre += elements.reduce(
             (sum, element) => sum + element.credit,
@@ -508,7 +508,6 @@ class TitulaireController extends AgentController {
           let data = [];
 
           unites.forEach((unite) => {
-            if (unite.semestre != semestre) return;
             const { elements } = unite;
 
             let moyUnite = 0;
