@@ -246,84 +246,120 @@ class Document {
      * Ajoute une ligne d'étudiant
      */
     _addStudentRow(row, student, numero) {
+        if (!student) return;
+
         const ws = this.worksheet;
-        
+
         // Informations fixes
         ws.getCell(row, 1).value = numero;
-        ws.getCell(row, 2).value = student.matricule;
-        ws.getCell(row, 3).value = `${student.nom} ${student.post_nom} ${student.prenom}`;
+        ws.getCell(row, 2).value = student.matricule || "";
+        ws.getCell(row, 3).value = `${student.nom || ""} ${
+          student.post_nom || ""
+        } ${student.prenom || ""}`.trim();
 
         let currentCol = 4;
-        
+
         // Notes des éléments et moyennes UE
-        this.data.unites.forEach(unite => {
-            if (!unite) return;
-            
-            unite.elements.forEach(element => {
-                // Trouver la note correspondante dans student.data
-                const noteIndex = this._findNoteIndex(student, element);
-                const note = noteIndex !== -1 ? student.data[noteIndex] : 'X';
-                
-                const cell = ws.getCell(row, currentCol);
-                cell.value = note;
-                cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                
-                // Formatage conditionnel
-                if (typeof note === 'number') {
-                    if (note >= 16) {
-                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF92D050' } };
-                    } else if (note >= 12) {
-                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } };
-                    } else if (note >= 10) {
-                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC000' } };
-                    } else {
-                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF6B6B' } };
-                        cell.font = { color: { argb: 'FFFFFFFF' } };
-                    }
+        if (this.data.unites) {
+          this.data.unites.forEach((unite) => {
+            if (!unite || !unite.elements) return;
+
+            unite.elements.forEach((element) => {
+              // Trouver la note correspondante dans student.data
+              const noteIndex = this._findNoteIndex(student, element);
+              const note =
+                noteIndex !== -1 && student.data
+                  ? student.data[noteIndex]
+                  : "X";
+
+              const cell = ws.getCell(row, currentCol);
+              cell.value = note;
+              cell.alignment = { horizontal: "center", vertical: "middle" };
+
+              // Formatage conditionnel
+              if (typeof note === "number") {
+                if (note >= 16) {
+                  cell.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "FF92D050" },
+                  };
+                } else if (note >= 12) {
+                  cell.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "FFFFFF00" },
+                  };
+                } else if (note >= 10) {
+                  cell.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "FFFFC000" },
+                  };
+                } else {
+                  cell.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "FFFF6B6B" },
+                  };
+                  cell.font = { color: { argb: "FFFFFFFF" } };
                 }
-                
-                this._setBorder(cell, 'thin');
-                currentCol++;
+              }
+
+              this._setBorder(cell, "thin");
+              currentCol++;
             });
 
             // Moyenne UE
             const moyUeCell = ws.getCell(row, currentCol);
             moyUeCell.value = this._calculateUnitAverage(student, unite);
             moyUeCell.font = { bold: true };
-            moyUeCell.alignment = { horizontal: 'center', vertical: 'middle' };
-            this._setBorder(moyUeCell, 'thin');
+            moyUeCell.alignment = { horizontal: "center", vertical: "middle" };
+            this._setBorder(moyUeCell, "thin");
             currentCol++;
-        });
+          });
+        }
 
         // Données de synthèse (extraites de student.data)
-        const dataLength = student.data.length;
-        const synthese = [
-            student.data[dataLength - 6], // total
-            student.data[dataLength - 5], // pourcentage
-            student.data[dataLength - 4], // mention
-            student.data[dataLength - 3], // ncv
-            student.data[dataLength - 2], // ncnv
-            student.data[dataLength - 1]  // décision
-        ];
+        if (student.data && student.data.length >= 6) {
+          const dataLength = student.data.length;
+          const synthese = [
+            student.data[dataLength - 6] || 0, // total
+            student.data[dataLength - 5] || 0, // pourcentage
+            student.data[dataLength - 4] || "", // mention
+            student.data[dataLength - 3] || 0, // ncv
+            student.data[dataLength - 2] || 0, // ncnv
+            student.data[dataLength - 1] || "", // décision
+          ];
 
-        synthese.forEach((value, index) => {
+          synthese.forEach((value, index) => {
             const cell = ws.getCell(row, currentCol + index);
             cell.value = value;
             cell.font = { bold: true };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
-            
+            cell.alignment = { horizontal: "center", vertical: "middle" };
+
             // Formatage spécial pour la décision
-            if (index === 5) { // décision
-                if (value === 'Passe') {
-                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF92D050' } };
-                } else {
-                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF6B6B' } };
-                    cell.font.color = { argb: 'FFFFFFFF' };
-                }
+            if (index === 5) {
+              // décision
+              if (value === "Passe" || value === "ADMIS") {
+                cell.fill = {
+                  type: "pattern",
+                  pattern: "solid",
+                  fgColor: { argb: "FF92D050" },
+                };
+              } else {
+                cell.fill = {
+                  type: "pattern",
+                  pattern: "solid",
+                  fgColor: { argb: "FFFF6B6B" },
+                };
+                cell.font.color = { argb: "FFFFFFFF" };
+              }
             }
-            
-            this._setBorder(cell, 'thin');
-        });
+
+            this._setBorder(cell, "thin");
+          });
+        }
 
         // Hauteur de ligne
         ws.getRow(row).height = 25;
@@ -359,19 +395,41 @@ class Document {
      * Trouve l'index de la note dans student.data
      */
     _findNoteIndex(student, element) {
-        // Logique pour trouver l'index basé sur votre structure de données
-        // Cette méthode dépend de comment les données sont organisées dans student.data
-        // Vous devrez l'adapter selon votre structure exacte
-        return -1; // À implémenter selon votre logique
+        if (!student || !student.data || !element) return -1;
+        
+        // Si vous avez un mapping des éléments dans student.data
+        // Vous devrez adapter cette logique selon votre structure de données
+        // Pour l'instant, on retourne un index basé sur l'ordre
+        if (student.elementIndexes && student.elementIndexes[element.id]) {
+            return student.elementIndexes[element.id];
+        }
+        
+        // Fallback: chercher par designation ou autre critère
+        return -1;
     }
 
     /**
      * Calcule la moyenne d'une unité
      */
     _calculateUnitAverage(student, unite) {
-        // Logique pour calculer la moyenne d'une unité
-        // À implémenter selon votre structure de données
-        return 0; // À implémenter
+        if (!student || !student.data || !unite || !unite.elements) return 0;
+        
+        let totalNotes = 0;
+        let totalCredits = 0;
+        let validNotes = 0;
+
+        unite.elements.forEach(element => {
+            const noteIndex = this._findNoteIndex(student, element);
+            if (noteIndex !== -1 && typeof student.data[noteIndex] === 'number') {
+                totalNotes += student.data[noteIndex] * (element.credit || 1);
+                totalCredits += (element.credit || 1);
+                validNotes++;
+            }
+        });
+
+        if (totalCredits === 0 || validNotes === 0) return 0;
+        
+        return Math.round((totalNotes / totalCredits) * 100) / 100;
     }
 
     /**
